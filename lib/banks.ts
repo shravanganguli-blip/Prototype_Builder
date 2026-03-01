@@ -1,0 +1,163 @@
+export interface Bank {
+  id: string;
+  name: string;
+  shortName: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  textOnPrimary: string;
+  bgLight: string;
+  logoText: string; // Text-based logo fallback
+  logoInitials: string;
+}
+
+export const BANKS: Bank[] = [
+  {
+    id: "sbi",
+    name: "State Bank of India",
+    shortName: "SBI",
+    primaryColor: "#1B4F9B",
+    secondaryColor: "#0D3378",
+    accentColor: "#F5A623",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#EBF2FF",
+    logoText: "State Bank of India",
+    logoInitials: "SBI",
+  },
+  {
+    id: "hdfc",
+    name: "HDFC Bank",
+    shortName: "HDFC",
+    primaryColor: "#004C8F",
+    secondaryColor: "#003670",
+    accentColor: "#E31837",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#E8F0FB",
+    logoText: "HDFC Bank",
+    logoInitials: "HDFC",
+  },
+  {
+    id: "icici",
+    name: "ICICI Bank",
+    shortName: "ICICI",
+    primaryColor: "#B02A30",
+    secondaryColor: "#8A1F24",
+    accentColor: "#F97316",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#FDECEA",
+    logoText: "ICICI Bank",
+    logoInitials: "ICICI",
+  },
+  {
+    id: "axis",
+    name: "Axis Bank",
+    shortName: "Axis",
+    primaryColor: "#97144D",
+    secondaryColor: "#7A0F3E",
+    accentColor: "#12877F",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#FCE8F0",
+    logoText: "Axis Bank",
+    logoInitials: "AXIS",
+  },
+  {
+    id: "kotak",
+    name: "Kotak Mahindra Bank",
+    shortName: "Kotak",
+    primaryColor: "#ED1C24",
+    secondaryColor: "#C41730",
+    accentColor: "#231F20",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#FFF0F0",
+    logoText: "Kotak Mahindra Bank",
+    logoInitials: "KMB",
+  },
+  {
+    id: "pnb",
+    name: "Punjab National Bank",
+    shortName: "PNB",
+    primaryColor: "#00205B",
+    secondaryColor: "#001540",
+    accentColor: "#FFD700",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#E6EAF5",
+    logoText: "Punjab National Bank",
+    logoInitials: "PNB",
+  },
+  {
+    id: "bob",
+    name: "Bank of Baroda",
+    shortName: "BOB",
+    primaryColor: "#E35B18",
+    secondaryColor: "#C24C12",
+    accentColor: "#1E3A5F",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#FEF0E9",
+    logoText: "Bank of Baroda",
+    logoInitials: "BOB",
+  },
+  {
+    id: "yesbank",
+    name: "Yes Bank",
+    shortName: "Yes Bank",
+    primaryColor: "#0066B3",
+    secondaryColor: "#004E8A",
+    accentColor: "#00AEEF",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#E5F3FC",
+    logoText: "Yes Bank",
+    logoInitials: "YES",
+  },
+  {
+    id: "indusind",
+    name: "IndusInd Bank",
+    shortName: "IndusInd",
+    primaryColor: "#1A1A2E",
+    secondaryColor: "#12122A",
+    accentColor: "#E4002B",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#EAEAF5",
+    logoText: "IndusInd Bank",
+    logoInitials: "IIB",
+  },
+  {
+    id: "idfcfirst",
+    name: "IDFC FIRST Bank",
+    shortName: "IDFC FIRST",
+    primaryColor: "#9C1A1A",
+    secondaryColor: "#7A1414",
+    accentColor: "#F4A261",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#FBE8E8",
+    logoText: "IDFC FIRST Bank",
+    logoInitials: "IDFC",
+  },
+  {
+    id: "canara",
+    name: "Canara Bank",
+    shortName: "Canara",
+    primaryColor: "#1D6F42",
+    secondaryColor: "#155234",
+    accentColor: "#F5A623",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#E7F5ED",
+    logoText: "Canara Bank",
+    logoInitials: "CAN",
+  },
+  {
+    id: "unionbank",
+    name: "Union Bank of India",
+    shortName: "Union Bank",
+    primaryColor: "#7B2D8B",
+    secondaryColor: "#5E2170",
+    accentColor: "#F5C400",
+    textOnPrimary: "#FFFFFF",
+    bgLight: "#F5EAF8",
+    logoText: "Union Bank of India",
+    logoInitials: "UBI",
+  },
+];
+
+export function getBankById(id: string): Bank | undefined {
+  return BANKS.find((b) => b.id === id);
+}
