@@ -29,13 +29,26 @@ interface Props {
 }
 
 export default function PrototypeViewer({ prototype }: Props) {
-  const bank = getBankById(prototype.bankId);
+  const baseBank = getBankById(prototype.bankId);
   const useCase = getUseCaseById(prototype.useCaseId);
   const [currentScreen, setCurrentScreen] = useState(0);
 
-  if (!bank || !useCase) {
+  if (!baseBank || !useCase) {
     return <div className="p-8 text-red-500">Invalid prototype configuration.</div>;
   }
+
+  const bank =
+    prototype.bankId === "other"
+      ? {
+          ...baseBank,
+          name: prototype.config.customBankName || "Other",
+          shortName: prototype.config.customBankName || "Other",
+          logoInitials: prototype.config.customBankName
+            ? prototype.config.customBankName.slice(0, 3).toUpperCase()
+            : "OTH",
+          ...(prototype.config.customBankColors ?? {}),
+        }
+      : baseBank;
 
   const screens = getScreensForUseCase(useCase, prototype.config.showRejectionFlow);
   const totalScreens = screens.length;

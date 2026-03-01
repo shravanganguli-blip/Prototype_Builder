@@ -2,13 +2,14 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { BANKS, getBankById } from "@/lib/banks";
+import { getBankById } from "@/lib/banks";
 import {
   USE_CASES,
   UseCaseId,
   PrototypeConfig,
   DEFAULT_CONFIG,
   getUseCaseById,
+  CustomBankColors,
 } from "@/lib/journeys";
 import { getSuggestions } from "@/lib/suggestions";
 import BankSelector from "./BankSelector";
@@ -29,6 +30,8 @@ export default function BuilderWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [bankId, setBankId] = useState<string>("");
+  const [customBankName, setCustomBankName] = useState("");
+  const [customBankColors, setCustomBankColors] = useState<CustomBankColors | null>(null);
   const [useCaseId, setUseCaseId] = useState<UseCaseId | "">("");
   const [config, setConfig] = useState<PrototypeConfig>({ ...DEFAULT_CONFIG });
   const [saving, setSaving] = useState(false);
@@ -61,7 +64,10 @@ export default function BuilderWizard() {
   };
 
   const canProceed = () => {
-    if (step === 0) return bankId !== "";
+    if (step === 0) {
+      if (bankId === "other") return customBankName.trim() !== "";
+      return bankId !== "";
+    }
     if (step === 1) return useCaseId !== "";
     return true;
   };
@@ -72,6 +78,17 @@ export default function BuilderWizard() {
     const uc = getUseCaseById(useCaseId as UseCaseId);
     if (!bank || !uc) return;
 
+    const resolvedBankName =
+      bankId === "other" ? customBankName.trim() || "Other" : bank.name;
+
+    const finalConfig: PrototypeConfig = {
+      ...config,
+      ...(bankId === "other" && {
+        customBankName: customBankName.trim() || "Other",
+        customBankColors: customBankColors ?? undefined,
+      }),
+    };
+
     setSaving(true);
     try {
       const res = await fetch("/api/prototypes", {
@@ -79,10 +96,10 @@ export default function BuilderWizard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bankId,
-          bankName: bank.name,
+          bankName: resolvedBankName,
           useCaseId,
           useCaseName: uc.name,
-          config,
+          config: finalConfig,
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -159,7 +176,14 @@ export default function BuilderWizard() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         {step === 0 && (
-          <BankSelector selected={bankId} onChange={handleBankSelect} />
+          <BankSelector
+            selected={bankId}
+            onChange={handleBankSelect}
+            customBankName={customBankName}
+            onCustomNameChange={setCustomBankName}
+            customBankColors={customBankColors}
+            onCustomColorsChange={setCustomBankColors}
+          />
         )}
         {step === 1 && (
           <UseCaseSelector

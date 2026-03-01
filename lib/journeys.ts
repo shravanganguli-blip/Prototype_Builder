@@ -126,6 +126,13 @@ export interface NudgeConfig {
   savingsAmount: number;
 }
 
+export interface CustomBankColors {
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  bgLight: string;
+}
+
 export interface PrototypeConfig {
   customerName: string;
   creditLimit: number;
@@ -142,6 +149,8 @@ export interface PrototypeConfig {
   subheadline: string;
   ctaText: string;
   successMessage: string;
+  customBankName?: string;
+  customBankColors?: CustomBankColors;
 }
 
 export const DEFAULT_CONFIG: PrototypeConfig = {
