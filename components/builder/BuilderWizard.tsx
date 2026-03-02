@@ -4,35 +4,57 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getBankById } from "@/lib/banks";
 import {
-  USE_CASES,
   UseCaseId,
   PrototypeConfig,
   DEFAULT_CONFIG,
   getUseCaseById,
+  getDefaultAuthFields,
+  AuthField,
+  ScreenId,
   CustomBankColors,
 } from "@/lib/journeys";
 import { getSuggestions } from "@/lib/suggestions";
 import BankSelector from "./BankSelector";
+import JourneyTypeSelector from "./JourneyTypeSelector";
+import AuthTypeSelector from "./AuthTypeSelector";
 import UseCaseSelector from "./UseCaseSelector";
 import CustomerConfig from "./CustomerConfig";
 import NudgesConfig from "./NudgeConfig";
 import CopyEditor from "./CopyEditor";
 
 const STEPS = [
-  { id: "bank", label: "Bank" },
+  { id: "bank",    label: "Bank" },
+  { id: "journey", label: "Journey" },
+  { id: "auth",    label: "Auth" },
   { id: "usecase", label: "Use Case" },
-  { id: "config", label: "Offer" },
-  { id: "nudges", label: "Nudges" },
-  { id: "copy", label: "Copy" },
+  { id: "config",  label: "Offer" },
+  { id: "nudges",  label: "Nudges" },
+  { id: "copy",    label: "Copy" },
 ];
 
 export default function BuilderWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
+
+  // Step 0 – Bank
   const [bankId, setBankId] = useState<string>("");
   const [customBankName, setCustomBankName] = useState("");
   const [customBankColors, setCustomBankColors] = useState<CustomBankColors | null>(null);
+
+  // Step 1 – Journey
+  const [journeyType, setJourneyType] = useState<"organic" | "campaign" | "">("");
+  const [campaignChannel, setCampaignChannel] = useState<"sms" | "whatsapp" | "email" | "rcs">("sms");
+
+  // Step 2 – Auth
+  const [authType, setAuthType] = useState<"default" | "custom">("default");
+  const [authFields, setAuthFields] = useState<AuthField[]>([]);
+
+  // Step 3 – Use Case
   const [useCaseId, setUseCaseId] = useState<UseCaseId | "">("");
+  const [otherDescription, setOtherDescription] = useState("");
+  const [otherMode, setOtherMode] = useState<"generic" | "pick">("generic");
+
+  // Steps 4-6 – Config
   const [config, setConfig] = useState<PrototypeConfig>({ ...DEFAULT_CONFIG });
   const [saving, setSaving] = useState(false);
 
@@ -43,7 +65,7 @@ export default function BuilderWizard() {
   const handleBankSelect = (id: string) => {
     setBankId(id);
     if (useCaseId) {
-      const suggestions = getSuggestions(id, useCaseId);
+      const suggestions = getSuggestions(id, useCaseId as UseCaseId);
       setConfig((prev) => ({ ...prev, ...suggestions }));
     }
   };
@@ -52,24 +74,35 @@ export default function BuilderWizard() {
     setUseCaseId(id);
     const uc = getUseCaseById(id);
     if (uc) {
-      const suggestions = bankId
-        ? getSuggestions(bankId, id)
-        : {};
+      const suggestions = bankId ? getSuggestions(bankId, id) : {};
       setConfig((prev) => ({
         ...prev,
         ...uc.defaultConfig,
         ...suggestions,
+        useCaseCategory: uc.category,
       }));
+      // Reset auth fields to defaults for the new category
+      if (authType === "default") {
+        setAuthFields(getDefaultAuthFields(uc.category));
+      }
     }
   };
 
-  const canProceed = () => {
-    if (step === 0) {
-      if (bankId === "other") return customBankName.trim() !== "";
-      return bankId !== "";
+  const canProceed = (): boolean => {
+    switch (step) {
+      case 0:
+        if (bankId === "other") return customBankName.trim() !== "";
+        return bankId !== "";
+      case 1:
+        return journeyType !== "";
+      case 2:
+        return true; // always valid – defaults are pre-set
+      case 3:
+        if (useCaseId === "other") return otherDescription.trim() !== "";
+        return useCaseId !== "";
+      default:
+        return true;
     }
-    if (step === 1) return useCaseId !== "";
-    return true;
   };
 
   const handleGenerate = async () => {
@@ -78,11 +111,22 @@ export default function BuilderWizard() {
     const uc = getUseCaseById(useCaseId as UseCaseId);
     if (!bank || !uc) return;
 
-    const resolvedBankName =
-      bankId === "other" ? customBankName.trim() || "Other" : bank.name;
+    const resolvedBankName = bankId === "other" ? (customBankName.trim() || "Other") : bank.name;
+
+    const resolvedAuthFields =
+      authType === "custom" && authFields.length > 0
+        ? authFields
+        : getDefaultAuthFields(uc.category);
 
     const finalConfig: PrototypeConfig = {
       ...config,
+      journeyType: journeyType || "organic",
+      campaignChannel,
+      authType,
+      authFields: resolvedAuthFields,
+      useCaseCategory: uc.category,
+      otherUseCaseDescription: otherDescription,
+      otherUseCaseMode: otherMode,
       ...(bankId === "other" && {
         customBankName: customBankName.trim() || "Other",
         customBankColors: customBankColors ?? undefined,
@@ -115,17 +159,15 @@ export default function BuilderWizard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top stepper */}
+      {/* Sticky stepper */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-2">
+        <div className="max-w-4xl mx-auto px-4 py-4 overflow-x-auto">
+          <div className="flex items-center gap-1 min-w-max">
             {STEPS.map((s, i) => (
-              <div key={s.id} className="flex items-center gap-2">
+              <div key={s.id} className="flex items-center gap-1">
                 <button
                   onClick={() => i < step && setStep(i)}
-                  className={`flex items-center gap-2 ${
-                    i < step ? "cursor-pointer" : "cursor-default"
-                  }`}
+                  className={`flex items-center gap-2 ${i < step ? "cursor-pointer" : "cursor-default"}`}
                 >
                   <span
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
@@ -138,34 +180,16 @@ export default function BuilderWizard() {
                   >
                     {i < step ? (
                       <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
-                    ) : (
-                      i + 1
-                    )}
+                    ) : (i + 1)}
                   </span>
-                  <span
-                    className={`text-sm font-medium hidden sm:block ${
-                      i === step
-                        ? "text-indigo-700"
-                        : i < step
-                        ? "text-gray-700"
-                        : "text-gray-400"
-                    }`}
-                  >
+                  <span className={`text-xs font-medium hidden sm:block ${i === step ? "text-indigo-700" : i < step ? "text-gray-700" : "text-gray-400"}`}>
                     {s.label}
                   </span>
                 </button>
                 {i < STEPS.length - 1 && (
-                  <div
-                    className={`h-px w-6 sm:w-12 ${
-                      i < step ? "bg-indigo-600" : "bg-gray-200"
-                    }`}
-                  />
+                  <div className={`h-px w-4 sm:w-8 ${i < step ? "bg-indigo-600" : "bg-gray-200"}`} />
                 )}
               </div>
             ))}
@@ -173,7 +197,7 @@ export default function BuilderWizard() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Step content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         {step === 0 && (
           <BankSelector
@@ -185,20 +209,54 @@ export default function BuilderWizard() {
             onCustomColorsChange={setCustomBankColors}
           />
         )}
+
         {step === 1 && (
+          <JourneyTypeSelector
+            selected={journeyType}
+            onChange={setJourneyType}
+            campaignChannel={campaignChannel}
+            onChannelChange={setCampaignChannel}
+          />
+        )}
+
+        {step === 2 && (
+          <AuthTypeSelector
+            authType={authType}
+            authFields={
+              authFields.length > 0
+                ? authFields
+                : getDefaultAuthFields(
+                    useCaseId ? (getUseCaseById(useCaseId as UseCaseId)?.category ?? "cards") : "cards"
+                  )
+            }
+            useCaseCategory={
+              useCaseId ? (getUseCaseById(useCaseId as UseCaseId)?.category ?? "cards") : "cards"
+            }
+            onChange={setAuthType}
+            onFieldsChange={setAuthFields}
+          />
+        )}
+
+        {step === 3 && (
           <UseCaseSelector
             selected={useCaseId}
             onChange={handleUseCaseSelect}
+            otherDescription={otherDescription}
+            onOtherDescriptionChange={setOtherDescription}
+            otherMode={otherMode}
+            onOtherModeChange={setOtherMode}
           />
         )}
-        {step === 2 && useCaseId && (
+
+        {step === 4 && useCaseId && (
           <CustomerConfig
             useCaseId={useCaseId as UseCaseId}
             config={config}
             onChange={updateConfig}
           />
         )}
-        {step === 3 && useCaseId && (
+
+        {step === 5 && useCaseId && (
           <NudgesConfig
             useCaseId={useCaseId as UseCaseId}
             nudges={config.nudges}
@@ -207,7 +265,8 @@ export default function BuilderWizard() {
             onRejectionChange={(v) => updateConfig({ showRejectionFlow: v })}
           />
         )}
-        {step === 4 && (
+
+        {step === 6 && (
           <CopyEditor config={config} onChange={updateConfig} />
         )}
 
@@ -215,9 +274,7 @@ export default function BuilderWizard() {
         <div className="flex items-center justify-between mt-10 pt-6 border-t border-gray-200">
           <button
             onClick={() => setStep((s) => Math.max(0, s - 1))}
-            className={`px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors ${
-              step === 0 ? "invisible" : ""
-            }`}
+            className={`px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-colors ${step === 0 ? "invisible" : ""}`}
           >
             Back
           </button>
@@ -238,24 +295,9 @@ export default function BuilderWizard() {
             >
               {saving ? (
                 <>
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8z"
-                    />
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
                   Generating...
                 </>
